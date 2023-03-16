@@ -87,28 +87,69 @@ namespace ExifReader.Models
                     BinaryPrimitives.ReadUInt32BigEndian(data[index..(index += 4)]) :
                     BinaryPrimitives.ReadUInt32LittleEndian(data[index..(index += 4)]);
 
-                if (TagInformation.CalculateValueLength((DataType)valueType, (int)valueCount) < 5)
+                var valueLength = TagInformation.CalculateValueLength((DataType)valueType, (int)valueCount);
+                const int offsetLength = 4;
+                if (valueLength < 5)
                 {
+                    var v = 0;
+
                     switch ((DataType)valueType)
                     {
                         case DataType.Byte:
-                        case DataType.Short:
-                        case DataType.Long:
-                        case DataType.SShort:
-                        case DataType.SLong:
-                            var v = isBigEndian ?
-                                BinaryPrimitives.ReadUInt32BigEndian(data[index..(index += 4)]) :
-                                BinaryPrimitives.ReadUInt32LittleEndian(data[index..(index += 4)]);
+                            v = (int)(isBigEndian ?
+                                BinaryPrimitives.ReadUInt16BigEndian(data[index..(index += valueLength)]) :
+                                BinaryPrimitives.ReadUInt16LittleEndian(data[index..(index += valueLength)]));
                             tagDataList.Add(ParseData((TagId)tag, valueA: (int)v));
+
+                            // 未使用分を捨てる
+                            index += (offsetLength - valueLength);
+                            break;
+                        case DataType.Short:
+                            v = (int)(isBigEndian ?
+                                BinaryPrimitives.ReadUInt16BigEndian(data[index..(index += valueLength)]) :
+                                BinaryPrimitives.ReadUInt16LittleEndian(data[index..(index += valueLength)]));
+                            tagDataList.Add(ParseData((TagId)tag, valueA: (int)v));
+
+                            // 未使用分を捨てる
+                            index += (offsetLength - valueLength);
+                            break;
+                        case DataType.Long:
+                            v = (int)(isBigEndian ?
+                                BinaryPrimitives.ReadUInt32BigEndian(data[index..(index += valueLength)]) :
+                                BinaryPrimitives.ReadUInt32LittleEndian(data[index..(index += valueLength)]));
+                            tagDataList.Add(ParseData((TagId)tag, valueA: (int)v));
+
+                            // 未使用分を捨てる
+                            index += (offsetLength - valueLength);
+                            break;
+                        case DataType.SShort:
+                            v = (int)(isBigEndian ?
+                                BinaryPrimitives.ReadInt16BigEndian(data[index..(index += valueLength)]) :
+                                BinaryPrimitives.ReadInt16LittleEndian(data[index..(index += valueLength)]));
+                            tagDataList.Add(ParseData((TagId)tag, valueA: (int)v));
+
+                            // 未使用分を捨てる
+                            index += (offsetLength - valueLength);
+                            break;
+                        case DataType.SLong:
+                            v = (int)(isBigEndian ?
+                                BinaryPrimitives.ReadInt32BigEndian(data[index..(index += valueLength)]) :
+                                BinaryPrimitives.ReadInt32LittleEndian(data[index..(index += valueLength)]));
+                            tagDataList.Add(ParseData((TagId)tag, valueA: (int)v));
+
+                            // 未使用分を捨てる
+                            index += (offsetLength - valueLength);
                             break;
                         case DataType.Ascii:
-                            var d = data[index..(index += 4)];
+                            var d = data[index..(index += valueLength)];
                             if (!isBigEndian)
                             {
                                 d.Reverse();
                             }
                             var ascii = Encoding.ASCII.GetString(d);
                             tagDataList.Add(ParseData((TagId)tag, strValue: ascii));
+                            // 未使用分を捨てる
+                            index += (offsetLength - valueLength);
                             break;
                         default:
                             // 4バイト分捨てる
