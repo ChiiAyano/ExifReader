@@ -1,9 +1,18 @@
 ﻿namespace ExifReader.Models.Tags;
 
+/// <summary>
+/// 露出プログラムを表すタグ
+/// </summary>
 internal record ExposureProgramTag : TagBase
 {
+    /// <summary>
+    /// 露出プログラム
+    /// </summary>
     public ExposureProgram Program { get; }
 
+    /// <summary>
+    /// 露出プログラムの説明
+    /// </summary>
     public string ProgramValue => this.Program switch
     {
         ExposureProgram.Undefined => "Undefined",

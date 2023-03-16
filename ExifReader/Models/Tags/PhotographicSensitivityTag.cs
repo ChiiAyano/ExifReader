@@ -1,9 +1,12 @@
 ﻿namespace ExifReader.Models.Tags;
 
+/// <summary>
+/// 撮影感度 (ISO感度) を表すタグ
+/// </summary>
 internal record PhotographicSensitivityTag : TagBase
 {
     /// <summary>
-    /// 値
+    /// ISO 感度の値
     /// </summary>
     public int Value { get; }
 

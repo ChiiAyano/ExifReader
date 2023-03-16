@@ -1,5 +1,8 @@
 ﻿namespace ExifReader.Models.Tags;
 
+/// <summary>
+/// 露出補正値を表すタグ
+/// </summary>
 internal record ExposureBiasValueTag : TagBase
 {
     /// <summary>

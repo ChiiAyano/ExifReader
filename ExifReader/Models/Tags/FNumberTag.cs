@@ -1,5 +1,8 @@
 ﻿namespace ExifReader.Models.Tags;
 
+/// <summary>
+/// F値を表すタグ
+/// </summary>
 internal record FNumberTag : TagBase
 {
     /// <summary>
