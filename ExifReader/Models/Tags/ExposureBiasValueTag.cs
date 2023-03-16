@@ -14,15 +14,15 @@ internal record ExposureBiasValueTag : TagBase
 
         if (this.ExposureBias > 0)
         {
-            this.FormattedValue = $"EXP+{this.ExposureBias:0.#}";
+            this.FormattedValue = $"+{this.ExposureBias:0.#} EV";
         }
         else if (this.ExposureBias < 0)
         {
-            this.FormattedValue = $"EXP{this.ExposureBias:0.#}";
+            this.FormattedValue = $"{this.ExposureBias:0.#} EV";
         }
         else
         {
-            this.FormattedValue = "EXP±0";
+            this.FormattedValue = "±0 EV";
         }
     }
 }

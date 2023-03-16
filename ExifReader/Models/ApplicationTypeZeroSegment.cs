@@ -17,24 +17,29 @@ namespace ExifReader.Models
         public byte ThumbnailHeight { get; set; }
         public byte[] Image { get; set; }
 
-        public ApplicationTypeZeroSegment(Span<byte> data)
+        public int Parse(Span<byte> data, int startIndex)
         {
-            MarkerIdentity = data[0];
-            AppZeroMarker = data[1];
-            FieldLength = BinaryPrimitives.ReadUInt16BigEndian(data[2..4]);
-            JfifIdentity = data[4..9].ToArray();
-            Version = BinaryPrimitives.ReadUInt16BigEndian(data[9..11]);
-            PixelUnit = data[11];
-            PixelWidth = BinaryPrimitives.ReadUInt16BigEndian(data[12..14]);
-            PixelHeight = BinaryPrimitives.ReadUInt16BigEndian(data[14..16]);
-            ThumbnailWidth = data[16];
-            ThumbnailHeight = data[17];
+            var index = startIndex;
+            MarkerIdentity = data[index];
+            AppZeroMarker = data[index += 1];
+            FieldLength = BinaryPrimitives.ReadUInt16BigEndian(data[(index += 1)..(index += 2)]);
+            JfifIdentity = data[index..(index += 5)].ToArray();
+            Version = BinaryPrimitives.ReadUInt16BigEndian(data[index..(index += 2)]);
+            PixelUnit = data[index];
+            PixelWidth = BinaryPrimitives.ReadUInt16BigEndian(data[(index += 1)..(index += 2)]);
+            PixelHeight = BinaryPrimitives.ReadUInt16BigEndian(data[index..(index += 2)]);
+            ThumbnailWidth = data[index += 1];
+            ThumbnailHeight = data[index += 1];
 
             if (FieldLength - 16 > 0)
             {
                 var length = FieldLength + 2 - 16;
-                Image = data[18..length].ToArray();
+                Image = data[(index += 1)..length].ToArray();
+
+                index += length;
             }
+
+            return index;
         }
     }
 }

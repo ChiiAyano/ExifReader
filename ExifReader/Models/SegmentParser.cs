@@ -1,17 +1,12 @@
-﻿using System;
-using System.Buffers.Binary;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
+﻿using System.Buffers.Binary;
 using System.Text;
-using System.Threading.Tasks;
 using ExifReader.Models.Tags;
 
 namespace ExifReader.Models
 {
-    internal class ApplicationTypeOneSegment
+    internal class SegmentParser
     {
-        const int StartIndex = 30;
+        int exifStartIndex = 0;
 
         public byte MarkerIdentity { get; set; }
         public byte AppZeroMarker { get; set; }
@@ -20,17 +15,22 @@ namespace ExifReader.Models
 
         public string ByteOrder { get; set; }
 
-        public TagBase?[] Parse(Span<byte> data)
+        public (TagBase?[] Data, int Index) Parse(Span<byte> data, int startIndex)
         {
-            var index = StartIndex;
+            var index = startIndex;
             var isBigEndian = false;
             var result = new List<TagBase?>();
 
-            MarkerIdentity = data[0];
-            AppZeroMarker = data[1];
-            FieldLength = BinaryPrimitives.ReadUInt16BigEndian(data[2..4]);
+            MarkerIdentity = data[index];
+            AppZeroMarker = data[index++];
+            FieldLength = BinaryPrimitives.ReadUInt16BigEndian(data[++index..(index += 2)]);
 
             // Exif は読み飛ばす 4..10
+            index += 6;
+
+            // ここがExifのゼロポジション
+            this.exifStartIndex = index;
+
             ByteOrder = Encoding.ASCII.GetString(data[index..(index += 2)]);
 
             if (ByteOrder == "MM")
@@ -40,7 +40,7 @@ namespace ExifReader.Models
                 var tiff = BinaryPrimitives.ReadUInt16BigEndian(data[index..(index += 2)]);
                 var nextPointer = BinaryPrimitives.ReadUInt32BigEndian(data[index..(index += 4)]);
 
-                index = StartIndex + (int)nextPointer;
+                index = this.exifStartIndex + (int)nextPointer;
             }
             else if (ByteOrder == "II")
             {
@@ -48,7 +48,7 @@ namespace ExifReader.Models
                 var tiff = BinaryPrimitives.ReadUInt16LittleEndian(data[index..(index += 2)]);
                 var nextPointer = BinaryPrimitives.ReadUInt32LittleEndian(data[index..(index += 4)]);
 
-                index = StartIndex + (int)nextPointer;
+                index = this.exifStartIndex + (int)nextPointer;
             }
 
             var tags = Parse(data, index, isBigEndian);
@@ -56,12 +56,12 @@ namespace ExifReader.Models
 
             var exifPointer = Array.Find(tags, f => f?.TagId == TagId.ExifIfdPointer) as NumericTag;
             index = exifPointer?.Value ?? 0;
-            //var exif = ExifIfd.Parse(data, isBigEndian, index, StartIndex);
+            //var exif = ExifIfd.Parse(data, isBigEndian, index, this.exifStartIndex);
 
-            var exifs = Parse(data, index + StartIndex, isBigEndian);
+            var exifs = Parse(data, index + this.exifStartIndex, isBigEndian);
             result.AddRange(exifs);
 
-            return result.Where(w => w != null).ToArray();
+            return (result.Where(w => w != null).ToArray(), index);
         }
 
         private TagBase?[] Parse(Span<byte> data, int index, bool isBigEndian)
@@ -144,43 +144,39 @@ namespace ExifReader.Models
 
         private TagBase? ParseTag(TagInformation info, bool isBigEndian, Span<byte> data)
         {
-            var index = 0;
+            int index;
 
             switch (info.DataType)
             {
                 case DataType.Ascii:
-                    index = StartIndex + (int)info.Offset;
+                    index = this.exifStartIndex + (int)info.Offset;
                     var d = data[index..(index += info.ValueLength)];
-                    if (!isBigEndian)
-                    {
-                        d.Reverse();
-                    }
                     var ascii = Encoding.ASCII.GetString(d);
                     return ParseData(info.Tag, strValue: ascii);
 
                 case DataType.Byte:
-                    index = StartIndex + (int)info.Offset;
+                    index = this.exifStartIndex + (int)info.Offset;
                     var bValue = isBigEndian ?
                     BinaryPrimitives.ReadInt16BigEndian(data[index..(index += info.ValueLength)]) :
                         BinaryPrimitives.ReadInt16LittleEndian(data[index..(index += info.ValueLength)]);
                     return ParseData(info.Tag, valueA: bValue);
 
                 case DataType.Short:
-                    index = StartIndex + (int)info.Offset;
+                    index = this.exifStartIndex + (int)info.Offset;
                     var sValue = isBigEndian ?
                     BinaryPrimitives.ReadUInt16BigEndian(data[index..(index += info.ValueLength)]) :
                         BinaryPrimitives.ReadUInt16LittleEndian(data[index..(index += info.ValueLength)]);
                     return ParseData(info.Tag, valueA: sValue);
 
                 case DataType.Long:
-                    index = StartIndex + (int)info.Offset;
+                    index = this.exifStartIndex + (int)info.Offset;
                     var lValue = isBigEndian ?
                     BinaryPrimitives.ReadUInt32BigEndian(data[index..(index += info.ValueLength)]) :
                         BinaryPrimitives.ReadUInt32LittleEndian(data[index..(index += info.ValueLength)]);
                     return ParseData(info.Tag, valueA: (int)lValue);
 
                 case DataType.Rational:
-                    index = StartIndex + (int)info.Offset;
+                    index = this.exifStartIndex + (int)info.Offset;
                     var rA = isBigEndian ?
                     BinaryPrimitives.ReadUInt32BigEndian(data[index..(index += info.ValueLength / 2)]) :
                     BinaryPrimitives.ReadUInt32LittleEndian(data[index..(index += info.ValueLength / 2)]);
@@ -190,21 +186,21 @@ namespace ExifReader.Models
                     return ParseData(info.Tag, valueA: (int)rA, valueB: (int)rB);
 
                 case DataType.SByte:
-                    index = StartIndex + (int)info.Offset;
+                    index = this.exifStartIndex + (int)info.Offset;
                     var sbValue = isBigEndian ?
                         BinaryPrimitives.ReadInt16BigEndian(data[index..(index += info.ValueLength)]) :
                         BinaryPrimitives.ReadInt16LittleEndian(data[index..(index += info.ValueLength)]);
                     return ParseData(info.Tag, valueA: sbValue);
 
                 case DataType.SLong:
-                    index = StartIndex + (int)info.Offset;
+                    index = this.exifStartIndex + (int)info.Offset;
                     var slValue = isBigEndian ?
                         BinaryPrimitives.ReadInt32BigEndian(data[index..(index += info.ValueLength)]) :
                         BinaryPrimitives.ReadInt32LittleEndian(data[index..(index += info.ValueLength)]);
                     return ParseData(info.Tag, valueA: slValue);
 
                 case DataType.SRational:
-                    index = StartIndex + (int)info.Offset;
+                    index = this.exifStartIndex + (int)info.Offset;
                     var srA = isBigEndian ?
                         BinaryPrimitives.ReadInt32BigEndian(data[index..(index += info.ValueLength / 2)]) :
                         BinaryPrimitives.ReadInt32LittleEndian(data[index..(index += info.ValueLength / 2)]);
@@ -222,6 +218,8 @@ namespace ExifReader.Models
         {
             switch (tagId)
             {
+                case TagId.ImageDescription:
+                    return new StringTag(tagId, strValue);
                 case TagId.Make:
                     return new StringTag(tagId, strValue);
                 case TagId.Model:
@@ -231,11 +229,15 @@ namespace ExifReader.Models
                 case TagId.DateTime:
                     return new DateTimeTag(tagId, strValue);
                 case TagId.ExposureTime:
-                    return new RationalTag(tagId, valueA ?? 0, valueB ?? 0);
+                    return new ExposureTimeTag(tagId, valueA ?? 0, valueB ?? 0);
                 case TagId.FNumber:
                     return new FNumberTag(tagId, valueA ?? 0, valueB ?? 0);
                 case TagId.ExifIfdPointer:
                     return new NumericTag(tagId, valueA ?? 0);
+                case TagId.ExposureProgram:
+                    return new ExposureProgramTag(tagId, valueA ?? 0);
+                case TagId.PhotographicSensitivity:
+                    return new PhotographicSensitivityTag(tagId, valueA ?? 0);
                 case TagId.SensitivityType:
                     return new NumericTag(tagId, valueA ?? 0);
                 case TagId.StandardOutputSensitivity:

@@ -4,6 +4,10 @@ internal enum TagId
 {
     // 0thIFD
     /// <summary>
+    /// 画像タイトル
+    /// </summary>
+    ImageDescription = 270,
+    /// <summary>
     /// メーカー
     /// </summary>
     Make = 271,
@@ -33,6 +37,14 @@ internal enum TagId
     /// Exif タグのポインター
     /// </summary>
     ExifIfdPointer = 34665,
+    /// <summary>
+    /// 露出プログラム
+    /// </summary>
+    ExposureProgram = 34850,
+    /// <summary>
+    /// 撮影感度
+    /// </summary>
+    PhotographicSensitivity = 34855,
     /// <summary>
     /// 感度種別
     /// </summary>
