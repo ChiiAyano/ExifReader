@@ -133,6 +133,10 @@ namespace ExifReader
                 $"{modeValue}{fNumber?.FormattedValue}\n" +
                 $"{shutter?.FormattedValue}\n" +
                 $"{iso?.FormattedValue} {exp?.FormattedValue}");
+
+            Console.WriteLine();
+            Console.WriteLine("出力しました。何かキーを押すと終了します。");
+            Console.ReadKey();
         }
 
         private static void ErrorMessage(string message)
