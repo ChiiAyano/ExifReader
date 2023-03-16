@@ -59,3 +59,7 @@ ISO 160 +1 EV
 
 ## リリース
 すみません準備中です。必要あればクローンしてご自身でビルドしてください。
+
+## 参考情報
+- [JpegAnalyzer Plus　オンラインヘルプ](http://hp.vector.co.jp/authors/VA032610/)
+- [デジタルスチルカメラ用 画像ファイルフォーマット規格 (PDF)](https://www.cipa.jp/std/documents/j/DC-008-2012_J.pdf)
