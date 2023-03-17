@@ -61,6 +61,16 @@ namespace ExifReader.Models
             var exifs = Parse(data, index + this.exifStartIndex, isBigEndian);
             result.AddRange(exifs);
 
+            var gpsPointer = Array.Find(tags, f => f?.TagId == TagId.GpsInfoIfdPointer);
+
+            if (gpsPointer is NumericTag gpsNumericPointer)
+            { 
+                index = gpsNumericPointer.Value;
+
+                var gpsData = Parse(data, index + this.exifStartIndex, isBigEndian);
+                result.AddRange(gpsData);
+            }
+
             return (result.Where(w => w != null).ToArray(), index);
         }
 
@@ -142,10 +152,6 @@ namespace ExifReader.Models
                             break;
                         case DataType.Ascii:
                             var d = data[index..(index += valueLength)];
-                            if (!isBigEndian)
-                            {
-                                d.Reverse();
-                            }
                             var ascii = Encoding.ASCII.GetString(d);
                             tagDataList.Add(ParseData((TagId)tag, strValue: ascii));
                             // 未使用分を捨てる
@@ -259,6 +265,16 @@ namespace ExifReader.Models
         {
             switch (tagId)
             {
+                case TagId.GpsVersionId:
+                    return new NumericTag(tagId, valueA ?? 0);
+                case TagId.GpsLatitudeRef:
+                    return new StringTag(tagId, strValue);
+                case TagId.GpsLatitude:
+                    return new RationalTag(tagId, valueA ?? 0, valueB ?? 0);
+                case TagId.GpsLongitudeRef:
+                    return new StringTag(tagId, strValue);
+                case TagId.GpsLongitude:
+                    return new RationalTag(tagId, valueA ?? 0, valueB ?? 0);
                 case TagId.ImageDescription:
                     return new StringTag(tagId, strValue);
                 case TagId.Make:
@@ -277,6 +293,8 @@ namespace ExifReader.Models
                     return new NumericTag(tagId, valueA ?? 0);
                 case TagId.ExposureProgram:
                     return new ExposureProgramTag(tagId, valueA ?? 0);
+                case TagId.GpsInfoIfdPointer:
+                    return new NumericTag(tagId, valueA ?? 0);
                 case TagId.PhotographicSensitivity:
                     return new PhotographicSensitivityTag(tagId, valueA ?? 0);
                 case TagId.SensitivityType:

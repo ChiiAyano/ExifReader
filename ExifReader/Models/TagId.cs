@@ -2,6 +2,36 @@
 
 internal enum TagId
 {
+    // GPS IFD
+    /// <summary>
+    /// GPS タグバージョン
+    /// </summary>
+    GpsVersionId = 0,
+    /// <summary>
+    /// 北緯・南緯
+    /// </summary>
+    GpsLatitudeRef = 1,
+    /// <summary>
+    /// 緯度
+    /// </summary>
+    GpsLatitude = 2,
+    /// <summary>
+    /// 東経・西経
+    /// </summary>
+    GpsLongitudeRef = 3,
+    /// <summary>
+    /// 経度
+    /// </summary>
+    GpsLongitude = 4,
+    /// <summary>
+    /// GPS 時間
+    /// </summary>
+    GpsTimeStamp = 7,
+    /// <summary>
+    /// GPS 日付
+    /// </summary>
+    GpsDateStamp = 29,
+
     // 0thIFD
     /// <summary>
     /// 画像タイトル
@@ -41,6 +71,10 @@ internal enum TagId
     /// 露出プログラム
     /// </summary>
     ExposureProgram = 34850,
+    /// <summary>
+    /// GPS タグへのポインター
+    /// </summary>
+    GpsInfoIfdPointer = 34853,
     /// <summary>
     /// 撮影感度
     /// </summary>
