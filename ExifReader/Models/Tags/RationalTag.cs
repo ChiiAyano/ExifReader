@@ -6,25 +6,20 @@
 internal record RationalTag : TagBase
 {
     /// <summary>
-    /// 分母
+    /// 分母・分子を表すペアの配列
     /// </summary>
-    public int Denominator { get; }
-    /// <summary>
-    /// 分子
-    /// </summary>
-    public int Numerator { get; }
-    /// <summary>
-    /// 分母と分子を単純に割り算した値
-    /// </summary>
-    public double Value { get; }
+    public Rational[] Rationals { get; }
 
-    public RationalTag(TagId tagId, int a, int b)
+    public RationalTag(TagId tagId, Rational[] values)
     {
-        this.TagId = tagId;
-        this.Numerator = a;
-        this.Denominator = b;
-
-        this.Value = (double)this.Numerator / this.Denominator;
-        this.FormattedValue = $"{this.Numerator} / {this.Denominator}";
+        this.Rationals = values;
+        this.FormattedValue = string.Join(", ", this.Rationals.Select(s => $"{s.Numerator}/{s.Denominator}"));
     }
+
+    /// <summary>
+    /// 分母・分子を表すペア
+    /// </summary>
+    /// <param name="Denominator">分母</param>
+    /// <param name="Numerator">分子</param>
+    public record struct Rational(int Denominator, int Numerator);
 }

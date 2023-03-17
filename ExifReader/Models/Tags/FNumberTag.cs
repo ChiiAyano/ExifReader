@@ -10,10 +10,12 @@ internal record FNumberTag : TagBase
     /// </summary>
     public double Number { get; }
 
-    public FNumberTag(TagId tagId, int a, int b)
+    public FNumberTag(TagId tagId, RationalTag.Rational[] values)
     {
         this.TagId = tagId;
-        this.Number = (double)a / b;
-        this.FormattedValue = $"f/{this.Number:0.#}";
+
+        var value = values.FirstOrDefault();
+        this.Number = (double)value.Numerator / value.Denominator;
+        this.FormattedValue = $"f/{this.Number:0.0}";
     }
 }

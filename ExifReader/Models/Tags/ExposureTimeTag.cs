@@ -5,10 +5,11 @@
 /// </summary>
 internal record ExposureTimeTag : TagBase
 {
-    public ExposureTimeTag(TagId tagId, int a, int b)
+    public ExposureTimeTag(TagId tagId, RationalTag.Rational[] values)
     {
         this.TagId = tagId;
 
-        this.FormattedValue = $"{a}/{b} sec";
+        var value = values.FirstOrDefault();
+        this.FormattedValue = $"{value.Numerator}/{value.Denominator} sec";
     }
 }

@@ -10,10 +10,13 @@ internal record FocalLengthTag : TagBase
     /// </summary>
     public double Focal { get; }
 
-    public FocalLengthTag(TagId tagId, int a, int b)
+    public FocalLengthTag(TagId tagId, RationalTag.Rational[] values)
     {
         this.TagId = tagId;
-        this.Focal = (double)a / b;
+
+        var value = values.FirstOrDefault();
+
+        this.Focal = (double)value.Numerator / value.Denominator;
         this.FormattedValue = $"{this.Focal:0.#} mm";
     }
 }
