@@ -61,6 +61,16 @@ namespace ExifReader.Models
             var exifs = Parse(data, index + this.exifStartIndex, isBigEndian);
             result.AddRange(exifs);
 
+            var gpsPointer = Array.Find(tags, f => f?.TagId == TagId.GpsInfoIfdPointer);
+
+            if (gpsPointer is NumericTag gpsNumericPointer)
+            { 
+                index = gpsNumericPointer.Value;
+
+                var gpsData = Parse(data, index + this.exifStartIndex, isBigEndian);
+                result.AddRange(gpsData);
+            }
+
             return (result.Where(w => w != null).ToArray(), index);
         }
 
@@ -99,7 +109,7 @@ namespace ExifReader.Models
                             v = (int)(isBigEndian ?
                                 BinaryPrimitives.ReadUInt16BigEndian(data[index..(index += valueLength)]) :
                                 BinaryPrimitives.ReadUInt16LittleEndian(data[index..(index += valueLength)]));
-                            tagDataList.Add(ParseData((TagId)tag, valueA: (int)v));
+                            tagDataList.Add(ParseData((TagId)tag, value: (int)v));
 
                             // 未使用分を捨てる
                             index += (offsetLength - valueLength);
@@ -108,7 +118,7 @@ namespace ExifReader.Models
                             v = (int)(isBigEndian ?
                                 BinaryPrimitives.ReadUInt16BigEndian(data[index..(index += valueLength)]) :
                                 BinaryPrimitives.ReadUInt16LittleEndian(data[index..(index += valueLength)]));
-                            tagDataList.Add(ParseData((TagId)tag, valueA: (int)v));
+                            tagDataList.Add(ParseData((TagId)tag, value: (int)v));
 
                             // 未使用分を捨てる
                             index += (offsetLength - valueLength);
@@ -117,7 +127,7 @@ namespace ExifReader.Models
                             v = (int)(isBigEndian ?
                                 BinaryPrimitives.ReadUInt32BigEndian(data[index..(index += valueLength)]) :
                                 BinaryPrimitives.ReadUInt32LittleEndian(data[index..(index += valueLength)]));
-                            tagDataList.Add(ParseData((TagId)tag, valueA: (int)v));
+                            tagDataList.Add(ParseData((TagId)tag, value: (int)v));
 
                             // 未使用分を捨てる
                             index += (offsetLength - valueLength);
@@ -126,7 +136,7 @@ namespace ExifReader.Models
                             v = (int)(isBigEndian ?
                                 BinaryPrimitives.ReadInt16BigEndian(data[index..(index += valueLength)]) :
                                 BinaryPrimitives.ReadInt16LittleEndian(data[index..(index += valueLength)]));
-                            tagDataList.Add(ParseData((TagId)tag, valueA: (int)v));
+                            tagDataList.Add(ParseData((TagId)tag, value: (int)v));
 
                             // 未使用分を捨てる
                             index += (offsetLength - valueLength);
@@ -135,17 +145,13 @@ namespace ExifReader.Models
                             v = (int)(isBigEndian ?
                                 BinaryPrimitives.ReadInt32BigEndian(data[index..(index += valueLength)]) :
                                 BinaryPrimitives.ReadInt32LittleEndian(data[index..(index += valueLength)]));
-                            tagDataList.Add(ParseData((TagId)tag, valueA: (int)v));
+                            tagDataList.Add(ParseData((TagId)tag, value: (int)v));
 
                             // 未使用分を捨てる
                             index += (offsetLength - valueLength);
                             break;
                         case DataType.Ascii:
                             var d = data[index..(index += valueLength)];
-                            if (!isBigEndian)
-                            {
-                                d.Reverse();
-                            }
                             var ascii = Encoding.ASCII.GetString(d);
                             tagDataList.Add(ParseData((TagId)tag, strValue: ascii));
                             // 未使用分を捨てる
@@ -200,65 +206,85 @@ namespace ExifReader.Models
                     var bValue = isBigEndian ?
                     BinaryPrimitives.ReadInt16BigEndian(data[index..(index += info.ValueLength)]) :
                         BinaryPrimitives.ReadInt16LittleEndian(data[index..(index += info.ValueLength)]);
-                    return ParseData(info.Tag, valueA: bValue);
+                    return ParseData(info.Tag, value: bValue);
 
                 case DataType.Short:
                     index = this.exifStartIndex + (int)info.Offset;
                     var sValue = isBigEndian ?
                     BinaryPrimitives.ReadUInt16BigEndian(data[index..(index += info.ValueLength)]) :
                         BinaryPrimitives.ReadUInt16LittleEndian(data[index..(index += info.ValueLength)]);
-                    return ParseData(info.Tag, valueA: sValue);
+                    return ParseData(info.Tag, value: sValue);
 
                 case DataType.Long:
                     index = this.exifStartIndex + (int)info.Offset;
                     var lValue = isBigEndian ?
                     BinaryPrimitives.ReadUInt32BigEndian(data[index..(index += info.ValueLength)]) :
                         BinaryPrimitives.ReadUInt32LittleEndian(data[index..(index += info.ValueLength)]);
-                    return ParseData(info.Tag, valueA: (int)lValue);
+                    return ParseData(info.Tag, value: (int)lValue);
 
                 case DataType.Rational:
                     index = this.exifStartIndex + (int)info.Offset;
-                    var rA = isBigEndian ?
-                    BinaryPrimitives.ReadUInt32BigEndian(data[index..(index += info.ValueLength / 2)]) :
-                    BinaryPrimitives.ReadUInt32LittleEndian(data[index..(index += info.ValueLength / 2)]);
-                    var rB = isBigEndian ?
-                    BinaryPrimitives.ReadUInt32BigEndian(data[index..(index += info.ValueLength / 2)]) :
-                        BinaryPrimitives.ReadUInt32LittleEndian(data[index..(index += info.ValueLength / 2)]);
-                    return ParseData(info.Tag, valueA: (int)rA, valueB: (int)rB);
+                    // データカウントはペアの数
+                    var rationalList = new List<(int, int)>();
+                    for (var i = 0; i < info.ValueCount; i++)
+                    {
+                        var rA = isBigEndian ?
+                            BinaryPrimitives.ReadUInt32BigEndian(data[index..(index += 4)]) :
+                            BinaryPrimitives.ReadUInt32LittleEndian(data[index..(index += 4)]);
+                        var rB = isBigEndian ?
+                            BinaryPrimitives.ReadUInt32BigEndian(data[index..(index += 4)]) :
+                            BinaryPrimitives.ReadUInt32LittleEndian(data[index..(index += 4)]);
+
+                        rationalList.Add(((int)rA, (int)rB));
+                    }
+                    return ParseRational(info.Tag, rationalList.ToArray());
 
                 case DataType.SByte:
                     index = this.exifStartIndex + (int)info.Offset;
                     var sbValue = isBigEndian ?
                         BinaryPrimitives.ReadInt16BigEndian(data[index..(index += info.ValueLength)]) :
                         BinaryPrimitives.ReadInt16LittleEndian(data[index..(index += info.ValueLength)]);
-                    return ParseData(info.Tag, valueA: sbValue);
+                    return ParseData(info.Tag, value: sbValue);
 
                 case DataType.SLong:
                     index = this.exifStartIndex + (int)info.Offset;
                     var slValue = isBigEndian ?
                         BinaryPrimitives.ReadInt32BigEndian(data[index..(index += info.ValueLength)]) :
                         BinaryPrimitives.ReadInt32LittleEndian(data[index..(index += info.ValueLength)]);
-                    return ParseData(info.Tag, valueA: slValue);
+                    return ParseData(info.Tag, value: slValue);
 
                 case DataType.SRational:
                     index = this.exifStartIndex + (int)info.Offset;
-                    var srA = isBigEndian ?
-                        BinaryPrimitives.ReadInt32BigEndian(data[index..(index += info.ValueLength / 2)]) :
-                        BinaryPrimitives.ReadInt32LittleEndian(data[index..(index += info.ValueLength / 2)]);
-                    var srB = isBigEndian ?
-                        BinaryPrimitives.ReadInt32BigEndian(data[index..(index += info.ValueLength / 2)]) :
-                        BinaryPrimitives.ReadInt32LittleEndian(data[index..(index += info.ValueLength / 2)]);
-                    return ParseData(info.Tag, valueA: srA, valueB: srB);
+                    // データカウントはペアの数
+                    var sRationalList = new List<(int, int)>();
+                    for (var i = 0; i < info.ValueCount; i++)
+                    {
+                        var rA = isBigEndian ?
+                            BinaryPrimitives.ReadInt32BigEndian(data[index..(index += 4)]) :
+                            BinaryPrimitives.ReadInt32LittleEndian(data[index..(index += 4)]);
+                        var rB = isBigEndian ?
+                            BinaryPrimitives.ReadInt32BigEndian(data[index..(index += 4)]) :
+                            BinaryPrimitives.ReadInt32LittleEndian(data[index..(index += 4)]);
+
+                        sRationalList.Add((rA, rB));
+                    }
+                    return ParseRational(info.Tag, sRationalList.ToArray());
 
                 default:
                     return null;
             }
         }
 
-        TagBase? ParseData(TagId tagId, string? strValue = null, int? valueA = null, int? valueB = null)
+        TagBase? ParseData(TagId tagId, string? strValue = null, int? value = null)
         {
             switch (tagId)
             {
+                case TagId.GpsVersionId:
+                    return new NumericTag(tagId, value ?? 0);
+                case TagId.GpsLatitudeRef:
+                    return new StringTag(tagId, strValue);
+                case TagId.GpsLongitudeRef:
+                    return new StringTag(tagId, strValue);
                 case TagId.ImageDescription:
                     return new StringTag(tagId, strValue);
                 case TagId.Make:
@@ -269,34 +295,51 @@ namespace ExifReader.Models
                     return new StringTag(tagId, strValue);
                 case TagId.DateTime:
                     return new DateTimeTag(tagId, strValue);
-                case TagId.ExposureTime:
-                    return new ExposureTimeTag(tagId, valueA ?? 0, valueB ?? 0);
-                case TagId.FNumber:
-                    return new FNumberTag(tagId, valueA ?? 0, valueB ?? 0);
                 case TagId.ExifIfdPointer:
-                    return new NumericTag(tagId, valueA ?? 0);
+                    return new NumericTag(tagId, value ?? 0);
                 case TagId.ExposureProgram:
-                    return new ExposureProgramTag(tagId, valueA ?? 0);
+                    return new ExposureProgramTag(tagId, value ?? 0);
+                case TagId.GpsInfoIfdPointer:
+                    return new NumericTag(tagId, value ?? 0);
                 case TagId.PhotographicSensitivity:
-                    return new PhotographicSensitivityTag(tagId, valueA ?? 0);
+                    return new PhotographicSensitivityTag(tagId, value ?? 0);
                 case TagId.SensitivityType:
-                    return new NumericTag(tagId, valueA ?? 0);
+                    return new NumericTag(tagId, value ?? 0);
                 case TagId.StandardOutputSensitivity:
-                    return new NumericTag(tagId, valueA ?? 0);
+                    return new NumericTag(tagId, value ?? 0);
                 case TagId.DateTimeOriginal:
                     return new DateTimeTag(tagId, strValue);
-                case TagId.ExposureBiasValue:
-                    return new ExposureBiasValueTag(tagId, valueA ?? 0, valueB ?? 0);
-                case TagId.MaxApertureValue:
-                    return new RationalTag(tagId, valueA ?? 0, valueB ?? 0);
-                case TagId.FocalLength:
-                    return new FocalLengthTag(tagId, valueA ?? 0, valueB ?? 0);
                 case TagId.WhiteBalance:
-                    return new NumericTag(tagId, valueA ?? 0);
+                    return new NumericTag(tagId, value ?? 0);
                 case TagId.FocalLengthIn35MmFilm:
-                    return new NumericTag(tagId, valueA ?? 0);
+                    return new NumericTag(tagId, value ?? 0);
                 case TagId.LensModel:
                     return new StringTag(tagId, strValue);
+                default:
+                    return null;
+            }
+        }
+
+        TagBase? ParseRational(TagId tagId, IEnumerable<(int Numerator, int Denominator)> values)
+        {
+            var rationals = values.Select(s => new RationalTag.Rational(s.Denominator, s.Numerator)).ToArray();
+
+            switch (tagId)
+            {
+                case TagId.GpsLatitude:
+                    return new GpsRationalTag(tagId, rationals);
+                case TagId.GpsLongitude:
+                    return new GpsRationalTag(tagId, rationals);
+                case TagId.ExposureTime:
+                    return new ExposureTimeTag(tagId, rationals);
+                case TagId.FNumber:
+                    return new FNumberTag(tagId, rationals);
+                case TagId.ExposureBiasValue:
+                    return new ExposureBiasValueTag(tagId, rationals);
+                case TagId.MaxApertureValue:
+                    return new RationalTag(tagId, rationals);
+                case TagId.FocalLength:
+                    return new FocalLengthTag(tagId, rationals);
                 default:
                     return null;
             }

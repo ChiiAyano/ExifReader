@@ -114,6 +114,11 @@ namespace ExifReader
             var fNumber = tagData.FirstOrDefault(f => f?.TagId == TagId.FNumber);
             var programMode = tagData.FirstOrDefault(f => f?.TagId == TagId.ExposureProgram) as ExposureProgramTag;
 
+            var gpsLatitudeRef = tagData.FirstOrDefault(f => f?.TagId == TagId.GpsLatitudeRef);
+            var gpsLatitude = tagData.FirstOrDefault(f => f?.TagId == TagId.GpsLatitude) as GpsRationalTag;
+            var gpsLongitudeRef = tagData.FirstOrDefault(f => f?.TagId == TagId.GpsLongitudeRef);
+            var gpsLongitude = tagData.FirstOrDefault(f => f?.TagId == TagId.GpsLongitude) as GpsRationalTag;
+
             var lensModelValue = lensModel is null ? "" : lensModel.FormattedValue + "\n";
 
             string? focalValue;
@@ -135,6 +140,15 @@ namespace ExifReader
                 $"{modeValue}{fNumber?.FormattedValue}\n" +
                 $"{shutter?.FormattedValue}\n" +
                 $"{iso?.FormattedValue} {exp?.FormattedValue}");
+
+            if (gpsLatitudeRef is not null &&
+                gpsLatitude is not null && 
+                gpsLongitudeRef is not null && 
+                gpsLongitude is not null)
+            {
+                Console.WriteLine();
+                Console.WriteLine($"{gpsLatitudeRef.FormattedValue}{gpsLatitude.FormattedValue}, {gpsLongitudeRef.FormattedValue}{gpsLongitude.FormattedValue}");
+            }
 
             Console.WriteLine();
             Console.WriteLine("出力しました。何かキーを押すと終了します。");
