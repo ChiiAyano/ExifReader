@@ -102,6 +102,7 @@ namespace ExifReader
                 return;
             }
 
+            var originDate = tagData.FirstOrDefault(f => f?.TagId == TagId.DateTimeOriginal) as DateTimeTag;
             var maker = tagData.FirstOrDefault(f => f?.TagId == TagId.Make) as StringTag;
             var model = tagData.FirstOrDefault(f => f?.TagId == TagId.Model) as StringTag;
             var lensModel = tagData.FirstOrDefault(f => f?.TagId == TagId.LensModel) as StringTag;
@@ -127,7 +128,8 @@ namespace ExifReader
 
             var modeValue = programMode is null ? "" : $"Mode {programMode.ProgramValue} ";
 
-            Console.WriteLine($"{maker?.FormattedValue} {model?.FormattedValue}\n" +
+            Console.WriteLine($"{originDate?.DateTime:yyyy/MM/dd HH:mm}\n" +
+                $"{maker?.FormattedValue} {model?.FormattedValue}\n" +
                 $"{lensModelValue}" +
                 $"{focalValue}\n" +
                 $"{modeValue}{fNumber?.FormattedValue}\n" +
