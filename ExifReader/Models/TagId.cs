@@ -24,6 +24,14 @@ internal enum TagId
     /// </summary>
     GpsLongitude = 4,
     /// <summary>
+    /// 高度の基準
+    /// </summary>
+    GpsAltitudeRef = 5,
+    /// <summary>
+    /// 高度
+    /// </summary>
+    GpsAltitude = 6,
+    /// <summary>
     /// GPS 時間
     /// </summary>
     GpsTimeStamp = 7,

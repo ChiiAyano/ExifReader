@@ -12,6 +12,7 @@ internal record RationalTag : TagBase
 
     public RationalTag(TagId tagId, Rational[] values)
     {
+        this.TagId = tagId;
         this.Rationals = values;
         this.FormattedValue = string.Join(", ", this.Rationals.Select(s => $"{s.Numerator}/{s.Denominator}"));
     }

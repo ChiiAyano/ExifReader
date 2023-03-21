@@ -33,10 +33,8 @@ namespace ExifReader.Models
 
             if (FieldLength - 16 > 0)
             {
-                var length = FieldLength + 2 - 16;
-                Image = data[(index += 1)..length].ToArray();
-
-                index += length;
+                var length = FieldLength - 16;
+                Image = data[index..(index += length)].ToArray();
             }
 
             return index;
