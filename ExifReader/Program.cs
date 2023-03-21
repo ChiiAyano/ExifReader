@@ -14,6 +14,7 @@ namespace ExifReader
             {
                 foreach (var item in args)
                 {
+                    Console.WriteLine(item);
                     var data = await ReadAsync(item);
                     Analyze(data);
                 }
@@ -26,6 +27,9 @@ namespace ExifReader
                 var data = await ReadAsync(filePath);
                 Analyze(data);
             }
+
+            Console.WriteLine("出力しました。何かキーを押すと終了します。");
+            Console.ReadKey();
         }
 
         private static async Task<byte[]> ReadAsync(string? filePath)
@@ -151,8 +155,6 @@ namespace ExifReader
             }
 
             Console.WriteLine();
-            Console.WriteLine("出力しました。何かキーを押すと終了します。");
-            Console.ReadKey();
         }
 
         private static void ErrorMessage(string message)
