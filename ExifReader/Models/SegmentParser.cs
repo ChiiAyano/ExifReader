@@ -106,10 +106,13 @@ namespace ExifReader.Models
                     switch ((DataType)valueType)
                     {
                         case DataType.Byte:
-                            v = (int)(isBigEndian ?
-                                BinaryPrimitives.ReadUInt16BigEndian(data[index..(index += valueLength)]) :
-                                BinaryPrimitives.ReadUInt16LittleEndian(data[index..(index += valueLength)]));
-                            tagDataList.Add(ParseData((TagId)tag, value: (int)v));
+                            var list = new List<int>();
+                            for (var j = 0; j < valueLength; j++)
+                            {
+                                list.Add(data[index]);
+                                index++;
+                            }
+                            tagDataList.Add(ParseData((TagId)tag, numericArray: list.ToArray()));
 
                             // 未使用分を捨てる
                             index += (offsetLength - valueLength);
@@ -202,11 +205,14 @@ namespace ExifReader.Models
                     return ParseData(info.Tag, strValue: ascii);
 
                 case DataType.Byte:
+                    var list = new List<int>();
                     index = this.exifStartIndex + (int)info.Offset;
-                    var bValue = isBigEndian ?
-                    BinaryPrimitives.ReadInt16BigEndian(data[index..(index += info.ValueLength)]) :
-                        BinaryPrimitives.ReadInt16LittleEndian(data[index..(index += info.ValueLength)]);
-                    return ParseData(info.Tag, value: bValue);
+                    for (var i = 0; i < info.ValueLength; i++)
+                    {
+                        list.Add(data[index]);
+                        index++;
+                    }
+                    return ParseData(info.Tag, numericArray: list.ToArray());
 
                 case DataType.Short:
                     index = this.exifStartIndex + (int)info.Offset;
@@ -275,16 +281,18 @@ namespace ExifReader.Models
             }
         }
 
-        TagBase? ParseData(TagId tagId, string? strValue = null, int? value = null)
+        TagBase? ParseData(TagId tagId, string? strValue = null, int? value = null, int[]? numericArray = null)
         {
             switch (tagId)
             {
                 case TagId.GpsVersionId:
-                    return new NumericTag(tagId, value ?? 0);
+                    return new NumericArrayTag(tagId, numericArray);
                 case TagId.GpsLatitudeRef:
                     return new StringTag(tagId, strValue);
                 case TagId.GpsLongitudeRef:
                     return new StringTag(tagId, strValue);
+                case TagId.GpsAltitudeRef:
+                    return new GpsAltitudeRefTag(tagId, numericArray);
                 case TagId.ImageDescription:
                     return new StringTag(tagId, strValue);
                 case TagId.Make:
@@ -330,6 +338,8 @@ namespace ExifReader.Models
                     return new GpsRationalTag(tagId, rationals);
                 case TagId.GpsLongitude:
                     return new GpsRationalTag(tagId, rationals);
+                case TagId.GpsAltitude:
+                    return new GpsAltitudeTag(tagId, rationals);
                 case TagId.ExposureTime:
                     return new ExposureTimeTag(tagId, rationals);
                 case TagId.FNumber:
