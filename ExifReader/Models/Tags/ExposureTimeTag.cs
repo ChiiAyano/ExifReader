@@ -9,7 +9,16 @@ internal record ExposureTimeTag : TagBase
     {
         this.TagId = tagId;
 
-        var value = values.FirstOrDefault();
-        this.FormattedValue = $"{value.Numerator}/{value.Denominator} sec";
+        var (denominator, numerator) = values.FirstOrDefault();
+
+        if (numerator >= denominator)
+        {
+            // 分子の方が大きい場合は実数表記に変更
+            this.FormattedValue = $"{(double)numerator / denominator} sec";
+
+            return;
+        }
+
+        this.FormattedValue = $"{numerator}/{denominator} sec";
     }
 }
